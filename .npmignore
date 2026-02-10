@@ -1,0 +1,21 @@
+# Source files
+src/
+
+# Config
+tsconfig.json
+.gitignore
+.eslintrc*
+.prettierrc*
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dev files
+*.test.ts
+*.test.tsx
+__tests__/

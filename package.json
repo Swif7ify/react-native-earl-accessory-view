@@ -1,0 +1,51 @@
+{
+	"name": "react-native-earl-accessory-view",
+	"version": "1.0.0",
+	"description": "A fully customizable React Native keyboard accessory view that appears above the keyboard. Supports text positioning, dismiss button, character counter, animations, and custom content. Works on Android, iOS, and Web.",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist/",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "tsc",
+		"prepare": "tsc",
+		"clean": "rimraf dist"
+	},
+	"keywords": [
+		"react-native",
+		"keyboard",
+		"accessory",
+		"accessory-view",
+		"keyboard-accessory",
+		"input-accessory",
+		"keyboard-toolbar",
+		"keyboard-bar",
+		"customizable",
+		"ios",
+		"android",
+		"web",
+		"cross-platform"
+	],
+	"author": "ORDOVEZ, E,R",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ordovez-er/react-native-earl-accessory-view"
+	},
+	"bugs": {
+		"url": "https://github.com/ordovez-er/react-native-earl-accessory-view/issues"
+	},
+	"homepage": "https://github.com/ordovez-er/react-native-earl-accessory-view#readme",
+	"peerDependencies": {
+		"react": ">=16.8.0",
+		"react-native": ">=0.60.0"
+	},
+	"devDependencies": {
+		"@types/react": "^18.2.0",
+		"@types/react-native": "^0.72.0",
+		"typescript": "^5.3.0"
+	}
+}
