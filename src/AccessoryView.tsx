@@ -1,31 +1,28 @@
-import React, { useMemo, useCallback, useRef } from "react";
+import React, {
+	useMemo,
+	useCallback,
+	useRef,
+	useEffect,
+	useState,
+} from "react";
 import {
 	View,
 	Text,
 	TextInput,
-	Animated,
 	Platform,
 	Keyboard,
 	InputAccessoryView,
 	StyleSheet,
 	ScrollView,
 	TouchableOpacity,
-	LayoutAnimation,
-	UIManager,
+	Animated,
 } from "react-native";
-import { AccessoryViewProps, Position } from "./types";
+import { AccessoryViewProps, Position, AccessoryActionButton } from "./types";
 import { useKeyboardAccessory } from "./useKeyboardAccessory";
 import { DismissButton } from "./DismissButton";
+import { ActionButton } from "./ActionButton";
 import { CharacterCounter } from "./CharacterCounter";
 import { styles } from "./styles";
-
-// Enable LayoutAnimation on Android
-if (
-	Platform.OS === "android" &&
-	UIManager.setLayoutAnimationEnabledExperimental
-) {
-	UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // Unique nativeID for iOS InputAccessoryView
 const ACCESSORY_NATIVE_ID = "earl-accessory-view-native";
@@ -35,22 +32,17 @@ const ACCESSORY_NATIVE_ID = "earl-accessory-view-native";
  *
  * Shows a live preview of what the user is typing above the keyboard,
  * so the input is always visible even when the text field is obscured.
- * The preview is interactive — tap to focus the input, paste directly,
- * or edit the text right in the bar.
+ * The preview is interactive — paste directly or edit the text right
+ * in the bar. Changes sync back via onValueChange.
  *
  * Works on iOS, Android, and Web.
  *
  * @example
  * ```tsx
  * const [text, setText] = useState('');
- * const inputRef = useRef<TextInput>(null);
  *
- * <TextInput ref={inputRef} value={text} onChangeText={setText} />
- * <AccessoryView
- *   value={text}
- *   onValueChange={setText}
- *   onPress={() => inputRef.current?.focus()}
- * />
+ * <TextInput value={text} onChangeText={setText} />
+ * <AccessoryView value={text} onValueChange={setText} />
  * ```
  */
 export const AccessoryView: React.FC<AccessoryViewProps> = ({
@@ -68,8 +60,11 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 	textStyle,
 	children,
 
+	// Action buttons
+	actionButtons,
+
 	// Dismiss button
-	showDismissButton = true,
+	showDismissButton,
 	dismissButtonPosition = "auto",
 	onDismiss,
 	dismissButtonContent,
@@ -99,11 +94,12 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 	elevation = 4,
 
 	// Behavior
-	animated = true,
-	animationDuration = 250,
-	animationEasing = "ease-out",
 	alwaysVisible = false,
 	safeAreaEnabled = true,
+
+	// Animation
+	animationEnabled = true,
+	animationDuration = 250,
 
 	// Callbacks
 	onKeyboardShow,
@@ -115,33 +111,103 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 	accessibilityLabel = "Input preview bar",
 	testID = "earl-accessory-view",
 }) => {
-	const prevVisible = useRef(false);
+	const { keyboardVisible, keyboardHeight } = useKeyboardAccessory({
+		onKeyboardShow: useCallback(
+			(kbHeight: number) => {
+				onKeyboardShow?.(kbHeight);
+				onAccessoryShow?.();
+			},
+			[onKeyboardShow, onAccessoryShow],
+		),
+		onKeyboardHide: useCallback(() => {
+			onKeyboardHide?.();
+			onAccessoryHide?.();
+		}, [onKeyboardHide, onAccessoryHide]),
+	});
 
-	const { keyboardVisible, keyboardHeight, animatedValue } =
-		useKeyboardAccessory({
-			animated,
-			animationDuration,
-			animationEasing,
-			onKeyboardShow: useCallback(
-				(kbHeight: number) => {
-					onKeyboardShow?.(kbHeight);
-					onAccessoryShow?.();
-				},
-				[onKeyboardShow, onAccessoryShow],
-			),
-			onKeyboardHide: useCallback(() => {
-				onKeyboardHide?.();
-				onAccessoryHide?.();
-			}, [onKeyboardHide, onAccessoryHide]),
-		});
+	const shouldShow = alwaysVisible || keyboardVisible;
 
-	// Determine if we should render at all
-	const shouldRender = alwaysVisible || keyboardVisible;
+	// ─── Animation ───────────────────────────────────────────────
+	const animValue = useRef(new Animated.Value(shouldShow ? 1 : 0)).current;
+	const [mounted, setMounted] = useState(shouldShow);
+	const lastKeyboardHeight = useRef(keyboardHeight);
 
-	// Track visibility changes for smooth transitions
-	if (shouldRender !== prevVisible.current) {
-		prevVisible.current = shouldRender;
+	if (keyboardVisible && keyboardHeight > 0) {
+		lastKeyboardHeight.current = keyboardHeight;
 	}
+
+	useEffect(() => {
+		if (shouldShow) {
+			setMounted(true);
+			if (animationEnabled) {
+				Animated.timing(animValue, {
+					toValue: 1,
+					duration: animationDuration,
+					useNativeDriver: true,
+				}).start();
+			} else {
+				animValue.setValue(1);
+			}
+		} else {
+			if (animationEnabled) {
+				Animated.timing(animValue, {
+					toValue: 0,
+					duration: animationDuration,
+					useNativeDriver: true,
+				}).start(({ finished }) => {
+					if (finished) {
+						setMounted(false);
+						lastKeyboardHeight.current = 0;
+					}
+				});
+			} else {
+				animValue.setValue(0);
+				setMounted(false);
+				lastKeyboardHeight.current = 0;
+			}
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [shouldShow, animationEnabled, animationDuration]);
+
+	const animatedBarStyle = useMemo(
+		() =>
+			Platform.OS === "ios"
+				? { opacity: animValue }
+				: {
+						opacity: animValue,
+						transform: [
+							{
+								translateY: animValue.interpolate({
+									inputRange: [0, 1],
+									outputRange: [height + 20, 0],
+								}),
+							},
+						],
+					},
+		[animValue, height],
+	);
+
+	// Resolve whether dismiss is shown:
+	// - If user explicitly sets showDismissButton, respect that
+	// - If actionButtons are provided and showDismissButton is not set, hide dismiss
+	// - Otherwise default to true
+	const effectiveShowDismiss =
+		showDismissButton !== undefined
+			? showDismissButton
+			: !actionButtons || actionButtons.length === 0;
+
+	// Split action buttons by position
+	const leftButtons = useMemo(
+		() => (actionButtons ?? []).filter((b) => b.position === "left"),
+		[actionButtons],
+	);
+	const rightButtons = useMemo(
+		() =>
+			(actionButtons ?? []).filter(
+				(b) => !b.position || b.position === "right",
+			),
+		[actionButtons],
+	);
 
 	// Resolve dismiss button position
 	const resolvedDismissPosition: Position = useMemo(() => {
@@ -174,7 +240,7 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 		[onValueChange],
 	);
 
-	// Handle preview tap
+	// Handle preview tap (only used in non-editable mode)
 	const handlePress = useCallback(() => {
 		onPress?.();
 	}, [onPress]);
@@ -202,7 +268,14 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 	const hasValue = value !== undefined && value.length > 0;
 
 	// ─── Render Nothing ──────────────────────────────────────────────
-	if (!shouldRender) {
+	if (!mounted) {
+		if (Platform.OS === "ios") {
+			return (
+				<InputAccessoryView nativeID={ACCESSORY_NATIVE_ID}>
+					<View />
+				</InputAccessoryView>
+			);
+		}
 		return null;
 	}
 
@@ -213,9 +286,14 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 			return <View style={styles.childrenContainer}>{children}</View>;
 		}
 
-		// Default layout: label + value preview (editable TextInput) + dismiss button
+		// Default layout: action buttons (left) + label + value preview + action buttons (right) + dismiss
 		return (
 			<>
+				{/* Left action buttons */}
+				{leftButtons.map((btn) => (
+					<ActionButton key={btn.id} {...btn} />
+				))}
+
 				{/* Optional label */}
 				{label !== undefined && (
 					<Text style={[styles.label, labelStyle]} numberOfLines={1}>
@@ -223,7 +301,7 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 					</Text>
 				)}
 
-				{/* Preview area — editable TextInput or tappable Text */}
+				{/* Preview area */}
 				{editable ? (
 					<ScrollView
 						horizontal
@@ -243,7 +321,6 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 							placeholder={placeholder}
 							placeholderTextColor="#AAAAAA"
 							onChangeText={handleTextChange}
-							onFocus={handlePress}
 							multiline={false}
 							scrollEnabled={false}
 							testID={`${testID}-input`}
@@ -276,8 +353,13 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 					</TouchableOpacity>
 				)}
 
+				{/* Right action buttons */}
+				{rightButtons.map((btn) => (
+					<ActionButton key={btn.id} {...btn} />
+				))}
+
 				<DismissButton
-					visible={showDismissButton}
+					visible={effectiveShowDismiss}
 					onPress={handleDismiss}
 					style={[
 						dismissButtonStyle,
@@ -312,32 +394,23 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 		);
 	};
 
-	// ─── Animated Wrapper ────────────────────────────────────────────
-	// Only use translateY — no opacity — to avoid ghosting / artifacting
-	const animatedStyle = animated
-		? {
-				transform: [
-					{
-						translateY: animatedValue.interpolate({
-							inputRange: [0, 1],
-							outputRange: [height + 10, 0],
-							extrapolate: "clamp" as const,
-						}),
-					},
-				],
-			}
-		: {};
-
 	// ─── Inner Accessory Bar ─────────────────────────────────────────
+	const bottomOffset =
+		Platform.OS === "android"
+			? keyboardVisible
+				? keyboardHeight
+				: lastKeyboardHeight.current
+			: 0;
+
 	const accessoryBar = (
 		<Animated.View
 			style={[
 				styles.outerContainer,
-				Platform.OS === "android" && {
-					bottom: keyboardVisible ? keyboardHeight : 0,
-				},
-				animatedStyle,
+				Platform.OS === "android" && { bottom: bottomOffset },
+				Platform.OS === "ios" && styles.iosContainer,
+				animatedBarStyle,
 			]}
+			pointerEvents={shouldShow ? "auto" : "none"}
 			accessibilityLabel={accessibilityLabel}
 			accessibilityRole="toolbar"
 			testID={testID}

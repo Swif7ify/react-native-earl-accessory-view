@@ -18,15 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Placeholder text when the input is empty
     - Optional field label (e.g. "Email", "Password")
     - Text positioning (left/right)
-    - Dismiss button with auto-positioning, customizable with any icon library
-    - Option to hide the dismiss button
-    - Character counter with warning/error color thresholds
-    - Custom children for full layout control
-    - Animated show/hide synced with keyboard
+    - Smooth fade + slide animations synced with keyboard events (`animationEnabled`, `animationDuration`)
     - `alwaysVisible` mode for sticky footer behavior
 
+- **`actionButtons` prop** — Array of fully customizable action buttons
+    - `content` accepts **any ReactNode**: icons from any library (lucide-react-native, @expo/vector-icons, etc.), images, custom components, or plain strings
+    - `onPress` accepts **any function**: send messages, switch inputs, open pickers, navigate, toggle formatting — anything
+    - `position` ('left' or 'right') to place buttons on either side of the preview
+    - `disabled` state with visual feedback
+    - When `actionButtons` is provided, the dismiss button hides automatically (override with `showDismissButton={true}`)
+
+- **`<ActionButton />` component** — Standalone action button, also exported for independent use
+
 - **`<DismissButton />`** — Standalone dismiss button component
-    - Accepts custom content (icons from lucide, ionicons, etc.)
+    - Accepts custom content (icons from any icon library)
     - Fully styleable with press feedback
     - Defaults to `Keyboard.dismiss()`
 
@@ -36,11 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`useKeyboardAccessory` hook** — Keyboard state management
     - Cross-platform: iOS `keyboardWillShow/Hide`, Android `keyboardDidShow/Hide`
-    - Returns `keyboardVisible`, `keyboardHeight`, `animatedValue`
+    - Global keyboard tracking for seamless field switching
+    - Returns `keyboardVisible`, `keyboardHeight`
 
-- **Cross-platform support** — iOS, Android, Web
+- **Custom children** — Override the default layout with any React Native content
+- **Cross-platform support** — iOS (`InputAccessoryView`), Android (absolute positioning), Web
+- **Safe area aware** — Respects bottom safe areas on notched devices
 - **Full TypeScript support** with JSDoc documentation
-- **Showcase** — Ready-to-use demo screen (`showcase.tsx`)
+- **`AccessoryActionButton` type** — Exported for type-safe action button configs
+- **Showcase** — Ready-to-use demo screen (`example/showcase.tsx`) with 10 interactive demos
 
 ---
 

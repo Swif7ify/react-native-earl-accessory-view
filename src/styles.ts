@@ -14,6 +14,11 @@ export const styles = StyleSheet.create({
 		zIndex: 9999,
 	},
 
+	// ─── iOS — InputAccessoryView handles positioning ──────────────────
+	iosContainer: {
+		position: "relative" as const,
+	},
+
 	// ─── Main Container ────────────────────────────────────────────────
 	container: {
 		backgroundColor: "#FFFFFF",
@@ -172,5 +177,39 @@ export const styles = StyleSheet.create({
 	// ─── Children wrapper ──────────────────────────────────────────────
 	childrenContainer: {
 		flex: 1,
+		alignSelf: "stretch",
+		justifyContent: "center",
+	},
+
+	// ─── Action Button ────────────────────────────────────────────────
+	actionButton: {
+		minWidth: 44,
+		minHeight: 44,
+		alignItems: "center",
+		justifyContent: "center",
+		borderRadius: 22,
+	},
+
+	actionButtonLeft: {
+		marginRight: 8,
+	},
+
+	actionButtonRight: {
+		marginLeft: 8,
+	},
+
+	actionButtonPressed: {
+		opacity: 0.5,
+		backgroundColor: "rgba(0, 0, 0, 0.05)",
+	},
+
+	actionButtonDisabled: {
+		opacity: 0.35,
+	},
+
+	actionButtonText: {
+		fontSize: 15,
+		fontWeight: "600",
+		color: "#007AFF",
 	},
 });

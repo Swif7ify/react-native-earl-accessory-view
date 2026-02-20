@@ -6,7 +6,7 @@
 
 A **keyboard input preview bar** for React Native. When the keyboard covers your input field, this bar sits above the keyboard showing what the user is typing in real-time — so they never lose sight of their input.
 
-Fully customizable. Works on **iOS**, **Android**, and **Web**.
+Fully customizable with **action buttons**, smooth animations, and cross-platform support on **iOS**, **Android**, and **Web**.
 
 ---
 
@@ -16,19 +16,20 @@ On mobile, the soft keyboard frequently covers `TextInput` fields — especially
 
 ## The Solution
 
-`react-native-earl-accessory-view` adds a slim bar above the keyboard that **mirrors what the user is typing** in real-time. When the keyboard goes away, the bar disappears too.
+`react-native-earl-accessory-view` adds a slim bar above the keyboard that **mirrors what the user is typing** in real-time. When the keyboard goes away, the bar animates out smoothly.
 
 ---
 
 ## Features
 
 - **Live input preview** — shows the current value above the keyboard in real-time
+- **Action buttons** — add send, attach, navigate, or any custom buttons with icons
 - **Fully customizable** — colors, fonts, height, borders, shadows, padding — everything
+- **Smooth animations** — fade + slide transitions synced with keyboard events
 - **Text positioning** — place preview text on the left or right
-- **Dismiss button** — auto-positions opposite to the text, fully styleable, supports any icon library (lucide, ionicons, etc.), or hide it entirely
+- **Dismiss button** — auto-positions opposite to the text, fully styleable, or hide it
 - **Field label** — optional label like "Email" or "Password" next to the preview
 - **Character counter** — built-in with warning/error color thresholds
-- **Smooth animations** — synced with keyboard events, configurable easing
 - **Cross-platform** — iOS `InputAccessoryView`, Android absolute positioning, Web fallback
 - **Safe area aware** — respects bottom safe areas on notched devices
 - **Custom children** — override the default layout with any React Native content
@@ -73,7 +74,7 @@ export default function App() {
 			/>
 
 			{/* This bar appears above the keyboard, previewing what you type */}
-			<AccessoryView value={text} />
+			<AccessoryView value={text} onValueChange={setText} />
 		</View>
 	);
 }
@@ -86,17 +87,127 @@ export default function App() {
 ### Basic Preview
 
 ```tsx
-const [text, setText] = useState('');
+const [text, setText] = useState("");
 
 <TextInput value={text} onChangeText={setText} />
-<AccessoryView value={text} />
+<AccessoryView value={text} onValueChange={setText} />
 ```
 
-### Preview on the Right, Dismiss on the Left
+### Send Button
+
+Replace the dismiss button with a send action:
 
 ```tsx
 <AccessoryView
 	value={text}
+	onValueChange={setText}
+	actionButtons={[
+		{
+			id: "send",
+			content: "Send",
+			onPress: () => {
+				console.log("Sending:", text);
+				setText("");
+			},
+			disabled: !text.trim(),
+			position: "right",
+		},
+	]}
+/>
+```
+
+### Send with Custom Icon
+
+Use any icon library (lucide-react-native, @expo/vector-icons, etc.):
+
+```tsx
+import { Send } from "lucide-react-native";
+
+<AccessoryView
+	value={text}
+	onValueChange={setText}
+	actionButtons={[
+		{
+			id: "send",
+			content: <Send size={20} color="#007AFF" />,
+			onPress: handleSend,
+			disabled: !text.trim(),
+		},
+	]}
+/>;
+```
+
+### Switch Between Inputs (Prev / Next)
+
+Navigate between form fields with any icon library:
+
+```tsx
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
+
+<AccessoryView
+	value={currentValue}
+	onValueChange={setCurrentValue}
+	label={currentField === "email" ? "Email" : "Password"}
+	actionButtons={[
+		{
+			id: "prev",
+			content: <ChevronLeft size={20} color="#6366F1" />,
+			onPress: () => emailRef.current?.focus(),
+			disabled: currentField === "email",
+			position: "left",
+		},
+		{
+			id: "next",
+			content: <ChevronRight size={20} color="#6366F1" />,
+			onPress: () => passwordRef.current?.focus(),
+			disabled: currentField === "password",
+			position: "right",
+		},
+	]}
+	showDismissButton={true}
+/>;
+```
+
+### Multi-Action Bar (Attach + Camera + Send)
+
+Combine multiple actions — `content` accepts **any ReactNode** and `onPress` accepts **any function**:
+
+```tsx
+import { Paperclip, Camera, Send } from "lucide-react-native";
+
+<AccessoryView
+	value={text}
+	onValueChange={setText}
+	actionButtons={[
+		{
+			id: "attach",
+			content: <Paperclip size={20} color="#6B7280" />,
+			onPress: openFilePicker,
+			position: "left",
+		},
+		{
+			id: "camera",
+			content: <Camera size={20} color="#6B7280" />,
+			onPress: openCamera,
+			position: "left",
+		},
+		{
+			id: "send",
+			content: <Send size={20} color="#007AFF" />,
+			onPress: handleSend,
+			disabled: !text.trim(),
+			position: "right",
+		},
+	]}
+/>;
+```
+
+### Right-Aligned Text
+
+```tsx
+<AccessoryView
+	value={text}
+	onValueChange={setText}
 	textPosition="right"
 	placeholder="Waiting for input..."
 />
@@ -105,13 +216,13 @@ const [text, setText] = useState('');
 ### No Dismiss Button
 
 ```tsx
-<AccessoryView value={text} showDismissButton={false} />
+<AccessoryView value={text} onValueChange={setText} showDismissButton={false} />
 ```
 
 ### With a Field Label
 
 ```tsx
-<AccessoryView value={text} label="Email" />
+<AccessoryView value={text} onValueChange={setText} label="Email" />
 ```
 
 ### Character Counter
@@ -119,6 +230,7 @@ const [text, setText] = useState('');
 ```tsx
 <AccessoryView
 	value={text}
+	onValueChange={setText}
 	charCount={text.length}
 	maxCharCount={280}
 	charCountWarningThreshold={0.8}
@@ -128,11 +240,11 @@ const [text, setText] = useState('');
 ### Custom Dismiss Icon (any icon library)
 
 ```tsx
-// Example with lucide-react-native
 import { X } from "lucide-react-native";
 
 <AccessoryView
 	value={text}
+	onValueChange={setText}
 	dismissButtonContent={<X size={18} color="#666" />}
 />;
 ```
@@ -142,6 +254,7 @@ import { X } from "lucide-react-native";
 ```tsx
 <AccessoryView
 	value={text}
+	onValueChange={setText}
 	backgroundColor="#1A1A2E"
 	valueStyle={{ color: "#FFFFFF" }}
 	placeholderStyle={{ color: "#555577" }}
@@ -176,10 +289,10 @@ import { X } from "lucide-react-native";
 ### iOS InputAccessoryView Connection
 
 ```tsx
-import { ACCESSORY_VIEW_NATIVE_ID } from 'react-native-earl-accessory-view';
+import { ACCESSORY_VIEW_NATIVE_ID } from "react-native-earl-accessory-view";
 
 <TextInput inputAccessoryViewID={ACCESSORY_VIEW_NATIVE_ID} />
-<AccessoryView value={text} />
+<AccessoryView value={text} onValueChange={setText} />
 ```
 
 ---
@@ -196,22 +309,49 @@ import { ACCESSORY_VIEW_NATIVE_ID } from 'react-native-earl-accessory-view';
 | `placeholder`      | `string`            | `'Type something...'` | Shown when value is empty                     |
 | `valueStyle`       | `TextStyle`         | —                     | Style for the preview text                    |
 | `placeholderStyle` | `TextStyle`         | —                     | Style for the placeholder                     |
-| `numberOfLines`    | `number`            | `1`                   | Max lines for the preview                     |
+| `editable`         | `boolean`           | `true`                | Allow editing/pasting in the preview bar      |
+| `onValueChange`    | `(value) => void`   | —                     | Called when preview value changes             |
+| `onPress`          | `() => void`        | —                     | Called when non-editable preview is tapped    |
 | `label`            | `string`            | —                     | Optional label (e.g. "Email")                 |
 | `labelStyle`       | `TextStyle`         | —                     | Style for the label                           |
 | `textPosition`     | `'left' \| 'right'` | `'left'`              | Preview text side                             |
+| `textStyle`        | `TextStyle`         | —                     | Style for the text                            |
 | `children`         | `ReactNode`         | —                     | Custom content (overrides default layout)     |
+
+#### Action Buttons
+
+| Prop            | Type                      | Default | Description                                                              |
+| --------------- | ------------------------- | ------- | ------------------------------------------------------------------------ |
+| `actionButtons` | `AccessoryActionButton[]` | —       | Array of action buttons (send, switch input, etc.). See below for shape. |
+
+**`AccessoryActionButton` shape:**
+
+| Field                | Type                  | Default   | Description                                                |
+| -------------------- | --------------------- | --------- | ---------------------------------------------------------- |
+| `id`                 | `string`              | —         | Unique key (required)                                      |
+| `onPress`            | `() => void`          | —         | **Any** function — send, attach, navigate, etc. (required) |
+| `content`            | `ReactNode \| string` | —         | **Any** icon, component, image, or text (required)         |
+| `position`           | `'left' \| 'right'`   | `'right'` | Where to place the button                                  |
+| `disabled`           | `boolean`             | `false`   | Disable the button                                         |
+| `style`              | `ViewStyle`           | —         | Container style override                                   |
+| `textStyle`          | `TextStyle`           | —         | Text style (when `content` is a string)                    |
+| `accessibilityLabel` | `string`              | —         | Accessibility label                                        |
+| `testID`             | `string`              | —         | Test ID                                                    |
+
+> **Note:** When `actionButtons` is provided, the dismiss button is automatically hidden unless `showDismissButton` is explicitly set to `true`.
 
 #### Dismiss Button
 
 | Prop                     | Type                          | Default            | Description                                  |
 | ------------------------ | ----------------------------- | ------------------ | -------------------------------------------- |
-| `showDismissButton`      | `boolean`                     | `true`             | Show/hide the close button                   |
+| `showDismissButton`      | `boolean`                     | `true` \*          | Show/hide the close button                   |
 | `dismissButtonPosition`  | `'auto' \| 'left' \| 'right'` | `'auto'`           | Button position (`auto` = opposite of text)  |
 | `onDismiss`              | `() => void`                  | `Keyboard.dismiss` | Dismiss callback                             |
 | `dismissButtonContent`   | `ReactNode`                   | `✕` text           | Custom button content (use any icon library) |
 | `dismissButtonStyle`     | `ViewStyle`                   | —                  | Button container style                       |
 | `dismissButtonTextStyle` | `TextStyle`                   | —                  | Default ✕ text style                         |
+
+\* Defaults to `false` when `actionButtons` is provided.
 
 #### Character Counter
 
@@ -236,11 +376,11 @@ import { ACCESSORY_VIEW_NATIVE_ID } from 'react-native-earl-accessory-view';
 | `containerStyle`        | `ViewStyle` | —               | Outer style      |
 | `contentContainerStyle` | `ViewStyle` | —               | Inner style      |
 
-#### Behavior
+#### Behavior & Animation
 
 | Prop                | Type      | Default | Description                   |
 | ------------------- | --------- | ------- | ----------------------------- |
-| `animated`          | `boolean` | `true`  | Animate transitions           |
+| `animationEnabled`  | `boolean` | `true`  | Animate transitions           |
 | `animationDuration` | `number`  | `250`   | Duration (ms)                 |
 | `alwaysVisible`     | `boolean` | `false` | Keep visible without keyboard |
 | `safeAreaEnabled`   | `boolean` | `true`  | Respect safe area (iOS)       |
@@ -256,13 +396,32 @@ import { ACCESSORY_VIEW_NATIVE_ID } from 'react-native-earl-accessory-view';
 
 ---
 
+### `<ActionButton />` Component
+
+A standalone action button component you can also use independently:
+
+```tsx
+import { ActionButton } from "react-native-earl-accessory-view";
+
+<ActionButton
+	id="send"
+	content="Send"
+	onPress={handleSend}
+	disabled={!text.trim()}
+/>;
+```
+
+---
+
 ### `useKeyboardAccessory(options?)` Hook
 
 Use this hook directly for custom keyboard-aware UIs.
 
 ```tsx
-const { keyboardVisible, keyboardHeight, animatedValue } =
-	useKeyboardAccessory();
+const { keyboardVisible, keyboardHeight } = useKeyboardAccessory({
+	onKeyboardShow: (height) => console.log("Keyboard height:", height),
+	onKeyboardHide: () => console.log("Keyboard hidden"),
+});
 ```
 
 ---
@@ -277,7 +436,13 @@ const { keyboardVisible, keyboardHeight, animatedValue } =
 
 ## Showcase
 
-A ready-to-use demo screen is included at [`showcase.tsx`](showcase.tsx). Drop it into your app to try every feature interactively.
+A ready-to-use demo screen is included at [`example/showcase.tsx`](example/showcase.tsx). Drop it into your app to try every feature interactively — including send buttons, input switching, and multi-action bars.
+
+> The showcase uses [lucide-react-native](https://lucide.dev/) for icons. Install it with:
+>
+> ```bash
+> npm install lucide-react-native react-native-svg
+> ```
 
 ---
 

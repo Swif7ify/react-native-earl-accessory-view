@@ -1,130 +1,103 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import {
-	Keyboard,
-	Platform,
-	Animated,
-	Easing,
-	KeyboardEvent,
-} from "react-native";
-import {
-	UseKeyboardAccessoryOptions,
-	KeyboardAccessoryState,
-	AnimationEasing,
-} from "./types";
+import { useEffect, useState, useRef } from "react";
+import { Keyboard, Platform, KeyboardEvent } from "react-native";
+import { UseKeyboardAccessoryOptions, KeyboardAccessoryState } from "./types";
 
-/**
- * Resolves an AnimationEasing preset to a React Native Easing function.
- */
-const getEasingFunction = (easing: AnimationEasing) => {
-	switch (easing) {
-		case "linear":
-			return Easing.linear;
-		case "ease-in":
-			return Easing.ease;
-		case "ease-out":
-			return Easing.out(Easing.ease);
-		case "ease-in-out":
-			return Easing.inOut(Easing.ease);
-		case "spring":
-			return Easing.bezier(0.25, 0.1, 0.25, 1);
-		default:
-			return Easing.out(Easing.ease);
+// ─── Global keyboard state tracker ─────────────────────────────────
+// Tracks keyboard state at module level so that newly mounted hooks
+// (e.g. when switching between inputs without closing the keyboard)
+// can immediately know whether the keyboard is already visible.
+let _globalKeyboardVisible = false;
+let _globalKeyboardHeight = 0;
+let _globalListenerCount = 0;
+let _globalShowSub: { remove: () => void } | null = null;
+let _globalHideSub: { remove: () => void } | null = null;
+
+function _startGlobalTracking() {
+	if (_globalListenerCount === 0) {
+		const showEvent =
+			Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+		const hideEvent =
+			Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+		_globalShowSub = Keyboard.addListener(showEvent, (e: KeyboardEvent) => {
+			_globalKeyboardVisible = true;
+			_globalKeyboardHeight = e.endCoordinates.height;
+		});
+		_globalHideSub = Keyboard.addListener(hideEvent, () => {
+			_globalKeyboardVisible = false;
+			_globalKeyboardHeight = 0;
+		});
 	}
-};
+	_globalListenerCount++;
+}
+
+function _stopGlobalTracking() {
+	_globalListenerCount--;
+	if (_globalListenerCount === 0) {
+		_globalShowSub?.remove();
+		_globalHideSub?.remove();
+		_globalShowSub = null;
+		_globalHideSub = null;
+	}
+}
 
 /**
- * Hook that manages keyboard visibility, height, and animated transitions.
+ * Hook that manages keyboard visibility and height.
  *
  * Cross-platform:
  * - iOS: uses `keyboardWillShow` / `keyboardWillHide` for pre-animation sync.
  * - Android: uses `keyboardDidShow` / `keyboardDidHide`.
  * - Web: falls back to `resize` event via React Native's Keyboard API.
  *
- * @param options - Configuration for animation behavior and callbacks.
- * @returns Current keyboard state and an animated value for transitions.
+ * Initializes with the current global keyboard state so that mounting
+ * while the keyboard is already visible works correctly (e.g. when
+ * switching between input fields).
+ *
+ * @param options - Configuration for callbacks.
+ * @returns Current keyboard state.
  */
 export const useKeyboardAccessory = (
 	options: UseKeyboardAccessoryOptions = {},
 ): KeyboardAccessoryState => {
-	const {
-		animated = true,
-		animationDuration = 250,
-		animationEasing = "ease-out",
-		onKeyboardShow,
-		onKeyboardHide,
-	} = options;
+	const { onKeyboardShow, onKeyboardHide } = options;
 
-	const [keyboardVisible, setKeyboardVisible] = useState(false);
-	const [keyboardHeight, setKeyboardHeight] = useState(0);
-	const animatedValue = useRef(new Animated.Value(0)).current;
+	// Use refs for callbacks so the effect never re-subscribes listeners
+	const onShowRef = useRef(onKeyboardShow);
+	const onHideRef = useRef(onKeyboardHide);
+	onShowRef.current = onKeyboardShow;
+	onHideRef.current = onKeyboardHide;
 
-	const animateIn = useCallback(
-		(duration: number = animationDuration) => {
-			if (animated) {
-				Animated.timing(animatedValue, {
-					toValue: 1,
-					duration,
-					easing: getEasingFunction(animationEasing),
-					useNativeDriver: true,
-				}).start();
-			} else {
-				animatedValue.setValue(1);
-			}
-		},
-		[animated, animationDuration, animationEasing, animatedValue],
+	const [keyboardVisible, setKeyboardVisible] = useState(
+		_globalKeyboardVisible,
 	);
-
-	const animateOut = useCallback(
-		(duration: number = animationDuration) => {
-			if (animated) {
-				Animated.timing(animatedValue, {
-					toValue: 0,
-					duration,
-					easing: getEasingFunction(animationEasing),
-					useNativeDriver: true,
-				}).start();
-			} else {
-				animatedValue.setValue(0);
-			}
-		},
-		[animated, animationDuration, animationEasing, animatedValue],
-	);
+	const [keyboardHeight, setKeyboardHeight] = useState(_globalKeyboardHeight);
 
 	useEffect(() => {
-		// Use 'will' events on iOS for smoother sync, 'did' events elsewhere
+		_startGlobalTracking();
+
+		// Sync if keyboard was already visible when this hook mounted
+		if (_globalKeyboardVisible) {
+			setKeyboardVisible(true);
+			setKeyboardHeight(_globalKeyboardHeight);
+			onShowRef.current?.(_globalKeyboardHeight);
+		}
+
 		const showEvent =
 			Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
 		const hideEvent =
 			Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
 		const handleShow = (event: KeyboardEvent) => {
-			const height = event.endCoordinates.height;
-			const duration =
-				Platform.OS === "ios"
-					? event.duration || animationDuration
-					: animationDuration;
-
+			const h = event.endCoordinates.height;
 			setKeyboardVisible(true);
-			setKeyboardHeight(height);
-			animateIn(duration);
-			onKeyboardShow?.(height);
+			setKeyboardHeight(h);
+			onShowRef.current?.(h);
 		};
 
-		const handleHide = (event: KeyboardEvent) => {
-			const duration =
-				Platform.OS === "ios"
-					? event.duration || animationDuration
-					: animationDuration;
-
-			animateOut(duration);
-
-			// Delay state update until animation ends to prevent layout flash
-			setTimeout(() => {
-				setKeyboardVisible(false);
-				setKeyboardHeight(0);
-			}, duration);
-
-			onKeyboardHide?.();
+		const handleHide = () => {
+			setKeyboardVisible(false);
+			setKeyboardHeight(0);
+			onHideRef.current?.();
 		};
 
 		const showSub = Keyboard.addListener(showEvent, handleShow);
@@ -133,18 +106,13 @@ export const useKeyboardAccessory = (
 		return () => {
 			showSub.remove();
 			hideSub.remove();
+			_stopGlobalTracking();
 		};
-	}, [
-		animationDuration,
-		animateIn,
-		animateOut,
-		onKeyboardShow,
-		onKeyboardHide,
-	]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	return {
 		keyboardVisible,
 		keyboardHeight,
-		animatedValue,
 	};
 };

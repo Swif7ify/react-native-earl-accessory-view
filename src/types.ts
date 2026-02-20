@@ -17,14 +17,42 @@ export type CharCountPosition = "left" | "right" | "center";
 export type DismissButtonPosition = "auto" | "left" | "right";
 
 /**
- * Animation easing presets.
+ * Configuration for a single action button in the accessory bar.
+ *
+ * Use action buttons to add custom functionality like sending messages,
+ * switching between text inputs, toggling formatting, etc.
  */
-export type AnimationEasing =
-	| "linear"
-	| "ease-in"
-	| "ease-out"
-	| "ease-in-out"
-	| "spring";
+export interface AccessoryActionButton {
+	/** Unique key for this button (used as React key). */
+	id: string;
+
+	/** Callback fired when the button is pressed. */
+	onPress: () => void;
+
+	/**
+	 * Content to display inside the button.
+	 * Can be a string (rendered as text), or any ReactNode (icons, images, etc.).
+	 */
+	content: ReactNode | string;
+
+	/** Where to place this button. Default: 'right'. */
+	position?: Position;
+
+	/** Whether the button is disabled. Default: false. */
+	disabled?: boolean;
+
+	/** Style overrides for the button container. */
+	style?: StyleProp<ViewStyle>;
+
+	/** Style for text content (only used when `content` is a string). */
+	textStyle?: StyleProp<TextStyle>;
+
+	/** Accessibility label for the button. */
+	accessibilityLabel?: string;
+
+	/** Test ID for testing frameworks. */
+	testID?: string;
+}
 
 /**
  * Props for the DismissButton sub-component.
@@ -99,7 +127,7 @@ export interface CharacterCounterProps {
 export interface AccessoryViewProps {
 	// ─── Preview Content ──────────────────────────────────────────────
 
-	/** The current input value to preview above the keyboard. This is the primary purpose of the component. */
+	/** The current input value to preview above the keyboard. */
 	value?: string;
 
 	/** Placeholder text shown when value is empty. Default: 'Type something...' */
@@ -114,7 +142,7 @@ export interface AccessoryViewProps {
 	/** Whether the preview text is editable (enables paste and direct editing). Default: true. */
 	editable?: boolean;
 
-	/** Called when the preview value changes (e.g. user pastes or edits in the preview). Use this to sync back to the original TextInput. */
+	/** Called when the preview value changes (e.g. user pastes or edits in the preview). */
 	onValueChange?: (newValue: string) => void;
 
 	/** Called when the preview area is tapped. Typically used to focus the original TextInput. */
@@ -134,6 +162,31 @@ export interface AccessoryViewProps {
 
 	/** Custom content — when provided, overrides the default preview layout entirely. */
 	children?: ReactNode;
+
+	// ─── Action Buttons ───────────────────────────────────────────────
+
+	/**
+	 * Array of action buttons to display in the accessory bar.
+	 *
+	 * Each button can perform any function (send, switch input, navigate, etc.)
+	 * and display any icon or text. Buttons are placed according to their
+	 * `position` ('left' or 'right').
+	 *
+	 * When `actionButtons` are provided, the dismiss button is hidden by default
+	 * unless `showDismissButton` is explicitly set to `true`.
+	 *
+	 * @example
+	 * ```tsx
+	 * <AccessoryView
+	 *   value={text}
+	 *   actionButtons={[
+	 *     { id: 'send', onPress: handleSend, content: <SendIcon /> },
+	 *     { id: 'attach', onPress: handleAttach, content: '📎', position: 'left' },
+	 *   ]}
+	 * />
+	 * ```
+	 */
+	actionButtons?: AccessoryActionButton[];
 
 	// ─── Dismiss Button ────────────────────────────────────────────────
 
@@ -215,20 +268,19 @@ export interface AccessoryViewProps {
 
 	// ─── Behavior ──────────────────────────────────────────────────────
 
-	/** Whether to animate show/hide transitions. Default: true. */
-	animated?: boolean;
-
-	/** Duration of the show/hide animation in ms. Default: 250. */
-	animationDuration?: number;
-
-	/** Animation easing preset. Default: 'ease-out'. */
-	animationEasing?: AnimationEasing;
-
 	/** Keep the accessory visible even when the keyboard is hidden. Default: false. */
 	alwaysVisible?: boolean;
 
 	/** Respect the bottom safe area on notched devices. Default: true (iOS). */
 	safeAreaEnabled?: boolean;
+
+	// ─── Animation ──────────────────────────────────────────────────────
+
+	/** Enable slide/fade animation when showing and hiding. Default: true. */
+	animationEnabled?: boolean;
+
+	/** Duration of the show/hide animation in milliseconds. Default: 250. */
+	animationDuration?: number;
 
 	// ─── Callbacks ─────────────────────────────────────────────────────
 
@@ -262,24 +314,12 @@ export interface KeyboardAccessoryState {
 
 	/** The current keyboard height in dp. */
 	keyboardHeight: number;
-
-	/** Animated value (0 = hidden, 1 = visible) for transitions. */
-	animatedValue: any; // Animated.Value
 }
 
 /**
  * Options for the useKeyboardAccessory hook.
  */
 export interface UseKeyboardAccessoryOptions {
-	/** Whether animations are enabled. Default: true. */
-	animated?: boolean;
-
-	/** Duration in ms. Default: 250. */
-	animationDuration?: number;
-
-	/** Easing preset. Default: 'ease-out'. */
-	animationEasing?: AnimationEasing;
-
 	/** Keyboard show callback. */
 	onKeyboardShow?: (keyboardHeight: number) => void;
 
