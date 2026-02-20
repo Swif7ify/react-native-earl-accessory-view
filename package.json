@@ -35,6 +35,10 @@
 		"type": "git",
 		"url": "https://github.com/ordovez-er/react-native-earl-accessory-view"
 	},
+	"funding": {
+		"type": "github",
+		"url": "https://github.com/sponsors/Swif7ify"
+	},
 	"bugs": {
 		"url": "https://github.com/ordovez-er/react-native-earl-accessory-view/issues"
 	},
