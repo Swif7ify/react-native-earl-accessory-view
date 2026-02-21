@@ -1,5 +1,10 @@
 import { ReactNode } from "react";
-import { TextStyle, ViewStyle, StyleProp } from "react-native";
+import {
+	TextStyle,
+	ViewStyle,
+	StyleProp,
+	TextInputProps as RNTextInputProps,
+} from "react-native";
 
 /**
  * Position options for text and dismiss button placement.
@@ -162,6 +167,34 @@ export interface AccessoryViewProps {
 
 	/** Custom content — when provided, overrides the default preview layout entirely. */
 	children?: ReactNode;
+
+	/**
+	 * Additional props forwarded to the internal preview TextInput.
+	 *
+	 * Use this to set props like `autoCapitalize`, `keyboardType`,
+	 * `autoCorrect`, `secureTextEntry`, etc. on the accessory bar's
+	 * editable input.
+	 *
+	 * @example
+	 * ```tsx
+	 * <AccessoryView
+	 *   value={code}
+	 *   onValueChange={setCode}
+	 *   textInputProps={{ autoCapitalize: 'characters', keyboardType: 'default' }}
+	 * />
+	 * ```
+	 */
+	textInputProps?: Omit<
+		RNTextInputProps,
+		| "value"
+		| "onChangeText"
+		| "placeholder"
+		| "placeholderTextColor"
+		| "style"
+		| "multiline"
+		| "scrollEnabled"
+		| "testID"
+	>;
 
 	// ─── Action Buttons ───────────────────────────────────────────────
 

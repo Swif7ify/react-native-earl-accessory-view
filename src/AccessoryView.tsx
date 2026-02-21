@@ -59,6 +59,7 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 	textPosition = "left",
 	textStyle,
 	children,
+	textInputProps,
 
 	// Action buttons
 	actionButtons,
@@ -311,6 +312,7 @@ export const AccessoryView: React.FC<AccessoryViewProps> = ({
 						style={styles.previewScroll}
 					>
 						<TextInput
+							{...textInputProps}
 							style={[
 								styles.previewInput,
 								isRowReversed && styles.textRight,
