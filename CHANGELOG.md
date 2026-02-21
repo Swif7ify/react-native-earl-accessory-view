@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-02-21
+
+### Added
+
+- **`textInputProps`** — New prop on `<AccessoryView />` that forwards additional `TextInput` props to the internal preview input.
+  Use this to set `autoCapitalize`, `keyboardType`, `autoCorrect`, `secureTextEntry`, `returnKeyType`, and any other standard `TextInput` prop on the accessory bar's editable input.
+
+    ```tsx
+    <AccessoryView
+    	value={code}
+    	onValueChange={setCode}
+    	textInputProps={{
+    		autoCapitalize: "characters",
+    		keyboardType: "default",
+    	}}
+    />
+    ```
+
+    Props managed internally (`value`, `onChangeText`, `placeholder`, `placeholderTextColor`, `style`, `multiline`, `scrollEnabled`, `testID`) are excluded from the type to prevent conflicts.
+
+---
+
 ## [1.0.0] - 2026-02-10
 
 ### Initial Release

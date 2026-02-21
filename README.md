@@ -286,6 +286,26 @@ import { X } from "lucide-react-native";
 </AccessoryView>
 ```
 
+### Forward TextInput Props (autoCapitalize, keyboardType, etc.)
+
+The accessory bar's internal `TextInput` doesn't inherit props from your original input.
+Use `textInputProps` to forward any standard `TextInput` prop:
+
+```tsx
+<AccessoryView
+	value={code}
+	onValueChange={setCode}
+	placeholder="e.g., ZAM-OL-0001"
+	textInputProps={{
+		autoCapitalize: "characters",
+		autoCorrect: false,
+		keyboardType: "default",
+	}}
+/>
+```
+
+This ensures behavior like `autoCapitalize: 'characters'` applies when the user types directly in the preview bar — not just in your original `TextInput`.
+
 ### iOS InputAccessoryView Connection
 
 ```tsx
@@ -303,20 +323,21 @@ import { ACCESSORY_VIEW_NATIVE_ID } from "react-native-earl-accessory-view";
 
 #### Preview Content
 
-| Prop               | Type                | Default               | Description                                   |
-| ------------------ | ------------------- | --------------------- | --------------------------------------------- |
-| `value`            | `string`            | —                     | Current input value to preview (primary prop) |
-| `placeholder`      | `string`            | `'Type something...'` | Shown when value is empty                     |
-| `valueStyle`       | `TextStyle`         | —                     | Style for the preview text                    |
-| `placeholderStyle` | `TextStyle`         | —                     | Style for the placeholder                     |
-| `editable`         | `boolean`           | `true`                | Allow editing/pasting in the preview bar      |
-| `onValueChange`    | `(value) => void`   | —                     | Called when preview value changes             |
-| `onPress`          | `() => void`        | —                     | Called when non-editable preview is tapped    |
-| `label`            | `string`            | —                     | Optional label (e.g. "Email")                 |
-| `labelStyle`       | `TextStyle`         | —                     | Style for the label                           |
-| `textPosition`     | `'left' \| 'right'` | `'left'`              | Preview text side                             |
-| `textStyle`        | `TextStyle`         | —                     | Style for the text                            |
-| `children`         | `ReactNode`         | —                     | Custom content (overrides default layout)     |
+| Prop               | Type                | Default               | Description                                                                                                           |
+| ------------------ | ------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `value`            | `string`            | —                     | Current input value to preview (primary prop)                                                                         |
+| `placeholder`      | `string`            | `'Type something...'` | Shown when value is empty                                                                                             |
+| `valueStyle`       | `TextStyle`         | —                     | Style for the preview text                                                                                            |
+| `placeholderStyle` | `TextStyle`         | —                     | Style for the placeholder                                                                                             |
+| `editable`         | `boolean`           | `true`                | Allow editing/pasting in the preview bar                                                                              |
+| `onValueChange`    | `(value) => void`   | —                     | Called when preview value changes                                                                                     |
+| `onPress`          | `() => void`        | —                     | Called when non-editable preview is tapped                                                                            |
+| `label`            | `string`            | —                     | Optional label (e.g. "Email")                                                                                         |
+| `labelStyle`       | `TextStyle`         | —                     | Style for the label                                                                                                   |
+| `textPosition`     | `'left' \| 'right'` | `'left'`              | Preview text side                                                                                                     |
+| `textStyle`        | `TextStyle`         | —                     | Style for the text                                                                                                    |
+| `children`         | `ReactNode`         | —                     | Custom content (overrides default layout)                                                                             |
+| `textInputProps`   | `TextInputProps`    | —                     | Additional props forwarded to the internal preview `TextInput` (e.g. `autoCapitalize`, `keyboardType`, `autoCorrect`) |
 
 #### Action Buttons
 
