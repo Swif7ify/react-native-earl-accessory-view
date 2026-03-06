@@ -469,6 +469,10 @@ A ready-to-use demo screen is included at [`example/showcase.tsx`](example/showc
 
 ## License
 
-MIT © [ORDOVEZ, E,R](https://github.com/ordovez-er)
+MIT
 
-**Author:** ORDOVEZ, E,R
+## ❤️ Sponsor
+
+If this project helps you, consider sponsoring its development:
+
+👉 https://github.com/sponsors/Swif7ify
